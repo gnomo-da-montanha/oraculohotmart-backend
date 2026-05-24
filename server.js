@@ -135,8 +135,8 @@ app.get('/gerar-acesso', (req,res)=>{
   };
 
   res.redirect(
-    `https://SEU-GITHUB.github.io/oraculohotmart/acesso.html?token=${token}`
-  );
+  `https://gnomo-da-montanha.github.io/oraculohotmart/acesso.html?token=${token}`
+);
 
 });
 const PORT = process.env.PORT || 3000;
