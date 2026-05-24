@@ -1,101 +1,111 @@
-const express = require("express");
-const cors = require("cors");
-const fs = require("fs");
+const express = require('express');
+const cors = require('cors');
+const crypto = require('crypto');
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-const PORT = process.env.PORT || 3000;
-
-let tokens = {};
-
-if (fs.existsSync("tokens.json")) {
-  tokens = JSON.parse(fs.readFileSync("tokens.json"));
-}
-
 /* =========================
-   HOTMART WEBHOOK
+   BANCO TEMPORÁRIO
 ========================= */
 
-app.post("/webhook", (req, res) => {
+const tokens = {};
 
-  const data = req.body;
+/* =========================
+   TESTE
+========================= */
 
-  // pagamento aprovado
-  if (data.event === "PURCHASE_APPROVED") {
+app.get('/', (req,res)=>{
 
-    const token = gerarToken();
+  res.send('Backend Oráculo Online');
 
-    tokens[token] = {
-      usado: false,
-      criado: Date.now()
-    };
+});
 
-    salvarTokens();
+/* =========================
+   CRIAR TOKEN
+========================= */
 
-    console.log("TOKEN GERADO:", token);
-  }
+app.post('/criar-token', (req,res)=>{
 
-  res.sendStatus(200);
+  const token = crypto.randomBytes(24).toString('hex');
+
+  tokens[token] = {
+    usado:false,
+    criadoEm:Date.now()
+  };
+
+  res.json({
+    token
+  });
+
 });
 
 /* =========================
    VALIDAR TOKEN
 ========================= */
 
-app.post("/validar-token", (req, res) => {
+app.post('/validar-token', (req,res)=>{
 
   const { token } = req.body;
 
-  if (!tokens[token]) {
+  if(!token){
+
     return res.json({
-      valido: false
+      valido:false
     });
+
   }
 
-  if (tokens[token].usado) {
+  const dados = tokens[token];
+
+  if(!dados){
+
     return res.json({
-      valido: false
+      valido:false
     });
+
+  }
+
+  if(dados.usado){
+
+    return res.json({
+      valido:false
+    });
+
   }
 
   res.json({
-    valido: true
+    valido:true
   });
+
 });
 
 /* =========================
    USAR TOKEN
 ========================= */
 
-app.post("/usar-token", (req, res) => {
+app.post('/usar-token', (req,res)=>{
 
   const { token } = req.body;
 
-  if (tokens[token]) {
+  if(tokens[token]){
 
     tokens[token].usado = true;
 
-    salvarTokens();
   }
 
-  res.sendStatus(200);
+  res.json({
+    ok:true
+  });
+
 });
 
-/* =========================
-   FUNÇÕES
-========================= */
+const PORT = process.env.PORT || 3000;
 
-function gerarToken() {
-  return Math.random().toString(36).substring(2, 15);
-}
+app.listen(PORT, ()=>{
 
-function salvarTokens() {
-  fs.writeFileSync("tokens.json", JSON.stringify(tokens, null, 2));
-}
+  console.log('Servidor rodando');
 
-app.listen(PORT, () => {
-  console.log("Servidor rodando");
 });
