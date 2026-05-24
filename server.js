@@ -125,6 +125,20 @@ console.log("LINK DE ACESSO:", accessLink);
   res.json({ ok: true });
 
 });
+app.get('/gerar-acesso', (req,res)=>{
+
+  const token = crypto.randomBytes(24).toString('hex');
+
+  tokens[token] = {
+    usado:false,
+    criadoEm:Date.now()
+  };
+
+  res.redirect(
+    `https://SEU-GITHUB.github.io/oraculohotmart/acesso.html?token=${token}`
+  );
+
+});
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, ()=>{
