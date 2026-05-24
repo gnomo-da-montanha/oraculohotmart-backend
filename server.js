@@ -86,19 +86,15 @@ app.post('/validar-token', (req,res)=>{
    USAR TOKEN
 ========================= */
 
-app.post('/usar-token', (req,res)=>{
+app.post('/finalizar-leitura', (req, res) => {
 
   const { token } = req.body;
 
-  if(tokens[token]){
-
+  if (tokens[token]) {
     tokens[token].usado = true;
-
   }
 
-  res.json({
-    ok:true
-  });
+  res.json({ ok: true });
 
 });
 app.post('/webhook/hotmart', (req, res) => {
