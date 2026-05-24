@@ -101,7 +101,27 @@ app.post('/usar-token', (req,res)=>{
   });
 
 });
+app.post('/webhook/hotmart', (req, res) => {
 
+  console.log('WEBHOOK RECEBIDO:', req.body);
+
+  const email = req.body?.data?.buyer?.email || req.body?.data?.email;
+  const transaction = req.body?.data?.purchase?.transaction || req.body?.data?.transaction;
+
+  const token = crypto.randomBytes(24).toString('hex');
+
+  tokens[token] = {
+    email,
+    transaction,
+    usado: false,
+    criadoEm: Date.now()
+  };
+
+  console.log('TOKEN GERADO:', token);
+
+  res.json({ ok: true });
+
+});
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, ()=>{
