@@ -9,14 +9,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Serve arquivos do frontend (acesso.html deve estar em /public)
+// FRONTEND
 app.use(express.static(path.join(__dirname, 'public')));
 
-/* =========================
-   BANCO (JSON PERSISTENTE)
-========================= */
+// =======================
+// BANCO PERSISTENTE
+// =======================
 
-const DB_FILE = './tokens.json';
+const DB_FILE = path.join(__dirname, 'tokens.json');
 
 function loadDB() {
   try {
@@ -30,17 +30,17 @@ function saveDB(db) {
   fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
 }
 
-/* =========================
-   HOME
-========================= */
+// =======================
+// HOME
+// =======================
 
 app.get('/', (req, res) => {
   res.send('Backend Oráculo Online');
 });
 
-/* =========================
-   VALIDAR TOKEN
-========================= */
+// =======================
+// VALIDAR TOKEN
+// =======================
 
 app.post('/validar-token', (req, res) => {
   const { token } = req.body;
@@ -50,29 +50,21 @@ app.post('/validar-token', (req, res) => {
   }
 
   const db = loadDB();
-  const dados = db[token];
+  const data = db[token];
 
-  if (!dados) {
-    return res.json({ valido: false });
-  }
-
-  if (dados.usado) {
+  if (!data || data.usado) {
     return res.json({ valido: false });
   }
 
   return res.json({ valido: true });
 });
 
-/* =========================
-   CONSUMIR TOKEN (1 USO)
-========================= */
+// =======================
+// CONSUMIR TOKEN (1 USO)
+// =======================
 
 app.post('/finalizar-leitura', (req, res) => {
   const { token } = req.body;
-
-  if (!token) {
-    return res.json({ ok: false });
-  }
 
   const db = loadDB();
 
@@ -85,9 +77,9 @@ app.post('/finalizar-leitura', (req, res) => {
   return res.json({ ok: true });
 });
 
-/* =========================
-   WEBHOOK HOTMART
-========================= */
+// =======================
+// WEBHOOK HOTMART
+// =======================
 
 app.post('/webhook/hotmart', (req, res) => {
   console.log('WEBHOOK RECEBIDO:', req.body);
@@ -101,12 +93,6 @@ app.post('/webhook/hotmart', (req, res) => {
 
   const token = crypto.randomBytes(24).toString('hex');
 
-  const accessLink =
-    `https://oraculohotmart-backend.onrender.com/acesso.html?token=${token}`;
-
-  console.log('TOKEN GERADO:', token);
-  console.log('LINK DE ACESSO:', accessLink);
-
   const db = loadDB();
 
   db[token] = {
@@ -118,12 +104,18 @@ app.post('/webhook/hotmart', (req, res) => {
 
   saveDB(db);
 
+  const accessLink =
+    `https://oraculohotmart-backend.onrender.com/acesso.html?token=${token}`;
+
+  console.log('TOKEN GERADO:', token);
+  console.log('LINK DE ACESSO:', accessLink);
+
   return res.sendStatus(200);
 });
 
-/* =========================
-   START SERVER
-========================= */
+// =======================
+// START SERVER
+// =======================
 
 const PORT = process.env.PORT || 3000;
 
