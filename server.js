@@ -1,112 +1,100 @@
-
 const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
+const fs = require('fs');
 const path = require('path');
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+// Serve arquivos do frontend (acesso.html deve estar em /public)
 app.use(express.static(path.join(__dirname, 'public')));
 
 /* =========================
-   BANCO TEMPORÁRIO
+   BANCO (JSON PERSISTENTE)
 ========================= */
 
-const tokens = {};
+const DB_FILE = './tokens.json';
+
+function loadDB() {
+  try {
+    return JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+  } catch (e) {
+    return {};
+  }
+}
+
+function saveDB(db) {
+  fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
+}
 
 /* =========================
-   TESTE
+   HOME
 ========================= */
 
-app.get('/', (req,res)=>{
-
+app.get('/', (req, res) => {
   res.send('Backend Oráculo Online');
-
-});
-
-/* =========================
-   CRIAR TOKEN
-========================= */
-
-app.post('/criar-token', (req,res)=>{
-
-  const token = crypto.randomBytes(24).toString('hex');
-
-  tokens[token] = {
-    usado:false,
-    criadoEm:Date.now()
-  };
-
-  res.json({
-    token
-  });
-
 });
 
 /* =========================
    VALIDAR TOKEN
 ========================= */
 
-app.post('/validar-token', (req,res)=>{
-
+app.post('/validar-token', (req, res) => {
   const { token } = req.body;
 
-  if(!token){
-
-    return res.json({
-      valido:false
-    });
-
+  if (!token) {
+    return res.json({ valido: false });
   }
 
-  const dados = tokens[token];
+  const db = loadDB();
+  const dados = db[token];
 
-  if(!dados){
-
-    return res.json({
-      valido:false
-    });
-
+  if (!dados) {
+    return res.json({ valido: false });
   }
 
-  if(dados.usado){
-
-    return res.json({
-      valido:false
-    });
-
+  if (dados.usado) {
+    return res.json({ valido: false });
   }
 
-  res.json({
-    valido:true
-  });
-
+  return res.json({ valido: true });
 });
 
 /* =========================
-   USAR TOKEN
+   CONSUMIR TOKEN (1 USO)
 ========================= */
 
 app.post('/finalizar-leitura', (req, res) => {
-
   const { token } = req.body;
 
-  if (tokens[token]) {
-    tokens[token].usado = true;
+  if (!token) {
+    return res.json({ ok: false });
   }
 
-  res.json({ ok: true });
+  const db = loadDB();
 
+  if (db[token]) {
+    db[token].usado = true;
+    db[token].usadoEm = Date.now();
+    saveDB(db);
+  }
+
+  return res.json({ ok: true });
 });
-app.post('/webhook/hotmart', (req, res) => {
 
-  console.log("WEBHOOK RECEBIDO:", req.body);
+/* =========================
+   WEBHOOK HOTMART
+========================= */
+
+app.post('/webhook/hotmart', (req, res) => {
+  console.log('WEBHOOK RECEBIDO:', req.body);
 
   if (req.body.event !== 'PURCHASE_APPROVED') {
-    res.sendStatus(200);
-return;
+    return res.sendStatus(200);
+  }
 
   const email = req.body?.data?.buyer?.email;
   const transaction = req.body?.data?.purchase?.transaction;
@@ -116,20 +104,29 @@ return;
   const accessLink =
     `https://oraculohotmart-backend.onrender.com/acesso.html?token=${token}`;
 
-  console.log("LINK DE ACESSO:", accessLink);
-  console.log("TOKEN GERADO:", token);
+  console.log('TOKEN GERADO:', token);
+  console.log('LINK DE ACESSO:', accessLink);
 
-  tokens[token] = {
+  const db = loadDB();
+
+  db[token] = {
     email,
     transaction,
     usado: false,
     criadoEm: Date.now()
   };
 
+  saveDB(db);
+
   return res.sendStatus(200);
 });
+
+/* =========================
+   START SERVER
+========================= */
+
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log('Servidor rodando');
+  console.log('Servidor rodando na porta', PORT);
 });
