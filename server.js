@@ -135,7 +135,8 @@ app.post('/webhook/hotmart', (req, res) => {
   const transaction = req.body?.data?.purchase?.transaction || req.body?.data?.transaction;
 
   const token = crypto.randomBytes(24).toString('hex');
-  const accessLink = `https://SEU-USUARIO.github.io/SEU-REPO/acesso.html?token=${token}`;
+const accessLink =
+`https://oraculohotmart-backend.onrender.com/acesso.html?token=${token}`;
 
 console.log("LINK DE ACESSO:", accessLink);
 
