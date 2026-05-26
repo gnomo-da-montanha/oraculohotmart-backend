@@ -100,7 +100,37 @@ app.post('/finalizar-leitura', (req, res) => {
 app.post('/webhook/hotmart', (req, res) => {
 
   console.log('WEBHOOK RECEBIDO:', req.body);
+const crypto = require('crypto');
+const fs = require('fs');
 
+app.post('/webhook/hotmart', (req, res) => {
+
+  console.log("WEBHOOK RECEBIDO:", req.body);
+
+  if (req.body.event !== 'PURCHASE_APPROVED') {
+    return res.sendStatus(200);
+  }
+
+  const token = crypto.randomBytes(20).toString('hex');
+
+  let db = {};
+  try {
+    db = JSON.parse(fs.readFileSync('./tokens.json'));
+  } catch (e) {
+    db = {};
+  }
+
+  db[token] = {
+    status: "active",
+    createdAt: Date.now()
+  };
+
+  fs.writeFileSync('./tokens.json', JSON.stringify(db, null, 2));
+
+  console.log("TOKEN GERADO:", token);
+
+  res.sendStatus(200);
+});
   const email = req.body?.data?.buyer?.email || req.body?.data?.email;
   const transaction = req.body?.data?.purchase?.transaction || req.body?.data?.transaction;
 
