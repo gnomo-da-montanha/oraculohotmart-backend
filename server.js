@@ -112,6 +112,27 @@ app.post('/webhook/hotmart', (req, res) => {
 
   return res.sendStatus(200);
 });
+app.get('/gerar-acesso', (req, res) => {
+
+  const transaction = req.query.transaction;
+
+  if(!transaction){
+    return res.send('Transação não encontrada');
+  }
+
+  const db = loadDB();
+
+  const token = Object.keys(db).find(t => {
+    return db[t].transaction === transaction;
+  });
+
+  if(!token){
+    return res.send('Token não encontrado');
+  }
+
+  return res.redirect(`/acesso.html?token=${token}`);
+
+});
 
 // =======================
 // START SERVER
